@@ -2,7 +2,7 @@ use clap::Parser;
 use std::collections::VecDeque;
 use rand::{rng, Rng};
 use rand_distr::Distribution;
-use rand_distr::Normal;
+use rand_distr::{Poisson, Exp};
 
 
 #[derive(Debug, Parser)]
@@ -162,16 +162,8 @@ fn main() {
     let mut queue: VecDeque<Request> = VecDeque::with_capacity(config.queue_size);
     let mut workers: Vec<Worker> = (0..config.num_workers).map(Worker::new).collect();
 
-    // Note: Normal distribution should be replaced!
-    let arrival_distribution = Normal::new(
-        config.request_arrival_rate,
-        config.request_arrival_rate / 4.0,
-    ).unwrap();
-    let latency_distribution = Normal::new(
-        config.mean_request_latency,
-        config.mean_request_latency / 4.0,
-    ).unwrap();
-
+    let arrival_distribution = Poisson::new(config.request_arrival_rate).unwrap();
+    let latency_distribution = Exp::new(1.0 / config.mean_request_latency).unwrap();
     let mut total_requests: u32 = 0;
     let mut failed_requests: u32 = 0;
     let mut remaining_spike_ticks: u32;
@@ -194,8 +186,7 @@ fn main() {
             incoming_requests -= 1.0;
             total_requests += 1;
 
-            // Clamp to zero since normal distribution can produce negative values.
-            let mut execution_time = 0.0_f64.max(latency_distribution.sample(&mut rng()));
+            let mut execution_time = latency_distribution.sample(&mut rng());
 
             // Apply 10x latency multiplier during spike period.
             if remaining_spike_ticks > 0 {
