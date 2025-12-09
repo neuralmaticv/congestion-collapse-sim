@@ -75,12 +75,16 @@ impl Request {
         }
     }
 
+    /// Processes one tick while the request is waiting in the queue.
+    /// Decrements timeout but makes no progress toward completion.
     fn waiting_tick(&mut self) {
         if self.timeout_ticks > 0 {
             self.timeout_ticks -= 1;
         }
     }
 
+    /// Processes one tick while the request is being worked on.
+    /// Decrements both timeout and remaining execution time.
     fn working_tick(&mut self) {
         if self.timeout_ticks > 0 {
             self.timeout_ticks -= 1;
@@ -109,6 +113,11 @@ impl Worker {
     }
 
     /// Processes one simulation tick.
+    ///
+    /// If the worker has a current request, it continues processing it.
+    /// If idle, it attempts to pick up a new request from the queue.
+    ///
+    /// Returns the finished request if it completed this tick.
     fn tick(&mut self, queue: &mut VecDeque<Request>, lifo: bool) -> Option<Request> {
         if let Some(current) = &mut self.current_request {
             current.working_tick();
@@ -116,6 +125,7 @@ impl Worker {
                 return self.current_request.take();
             }
         } else {
+            // Worker is idle - pick up a new request from the queue.
             let next = if lifo {
                 queue.pop_back()
             } else {
@@ -136,6 +146,8 @@ impl Worker {
     }
 }
 
+
+/// Possibly retry a failed request based on the configured probability.
 fn maybe_retry(retry_probability: f64, incoming_requests: &mut f64) {
     if rng().random_bool(retry_probability) {
         *incoming_requests += 1.0;
@@ -168,6 +180,7 @@ fn main() {
     let mut failed_requests: u32 = 0;
     let mut remaining_spike_ticks: u32;
 
+    // Simulate temporary service degradation during the first 0.1% of ticks.
     if config.simulate_spike {
         remaining_spike_ticks = config.simulation_ticks / SPIKE_DURATION_FRACTION;
     } else {
