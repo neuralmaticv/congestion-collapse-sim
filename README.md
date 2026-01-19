@@ -1,5 +1,16 @@
 # Congestion Collapse Simulator
 
+## To-Do - Future enhancements
+
+- [ ] Add detailed metrics tracking (p50/p95/p99 latencies, queue depth over time, worker utilization)
+- [ ] Implement CSV/JSON output for metrics to enable external visualization
+- [ ] Add priority queue support with request priorities
+- [ ] Implement circuit breaker pattern with configurable thresholds
+- [ ] Add exponential backoff for retries instead of fixed probability
+- [ ] Implement load shedding strategies (drop oldest, random, etc.)
+- [ ] Add multi-tier service simulation (client -> service A -> service B)
+- [ ] **Nice to Have:** Create terminal-based visualization using ratatui or similar
+
 ## Overview
 
 This simulator explores the behavior of synchronous request/reply systems under different loads and configuration parameters. It models realistic server scenarios where:
